@@ -149,6 +149,16 @@ public class OAuthRedirectUriTest extends AbstractKeycloakTest {
                 .secret("password");
         realm.client(installedAppCustomScheme);
 
+        ClientBuilder installedAppWildCardDomain = ClientBuilder.create().clientId("test-domain-wildcard").name("test-domain-wildcard")
+                .redirectUris("http://*.with-star.example.local/foo")
+                .secret("password");
+        realm.client(installedAppWildCardDomain);
+
+        ClientBuilder installedAppWildCardDomainAndFragment = ClientBuilder.create().clientId("test-domain-wildcard-with-fragment").name("test-domain-wildcard-fragment")
+                .redirectUris("http://*.with-star.local/foo/*")
+                .secret("password");
+        realm.client(installedAppWildCardDomainAndFragment);
+
         testRealms.add(realm.build());
     }
 
@@ -394,6 +404,18 @@ public class OAuthRedirectUriTest extends AbstractKeycloakTest {
         checkRedirectUri("http://localhosts/myapp", false);
         checkRedirectUri("http://localhost", false);
         checkRedirectUri("http://localhost/myapp2", false);
+    }
+
+    @Test
+    public void testWildCardInDomain() throws IOException {
+        oauth.clientId("test-domain-wildcard");
+
+        checkRedirectUri("http://wild.with-star.example.local/foo", true);
+        checkRedirectUri("http://wild.with-start.example.local/foo/no", false);
+
+        oauth.clientId("test-domain-wildcard-fragment");
+
+        checkRedirectUri("http://wild.with-dash.example.local/foo/no", true);
     }
 
     @Test

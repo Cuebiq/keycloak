@@ -17,6 +17,7 @@
 
 package org.keycloak.protocol.oidc.utils;
 
+import org.apache.commons.lang.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.common.util.UriUtils;
 import org.keycloak.models.ClientModel;
@@ -169,6 +170,19 @@ public class RedirectUtils {
 
     private static boolean matchesRedirects(Set<String> validRedirects, String redirect) {
         for (String validRedirect : validRedirects) {
+            String protocol = StringUtils.substringBefore(validRedirect,"://");
+            String hostAndPath = StringUtils.substringAfter(validRedirect, "://");
+            String path = "/" + StringUtils.substringAfter(hostAndPath,"/");
+            String host = StringUtils.substringBefore(hostAndPath,"/");
+            if(redirect.startsWith(protocol.concat("://")) && host.startsWith("*")){
+                URI redirectUri= URI.create(redirect);
+                String redirectHost = redirectUri.getHost();
+                if(redirectHost.endsWith(StringUtils.substringAfter(host,"*")))
+                {
+                    validRedirect = redirectUri.getScheme()+ "://" + redirectHost + path;
+                }
+
+            }
             if (validRedirect.endsWith("*") && !validRedirect.contains("?")) {
                 // strip off the query component - we don't check them when wildcards are effective
                 String r = redirect.contains("?") ? redirect.substring(0, redirect.indexOf("?")) : redirect;
