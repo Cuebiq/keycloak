@@ -155,7 +155,7 @@ public class OAuthRedirectUriTest extends AbstractKeycloakTest {
         realm.client(installedAppWildCardDomain);
 
         ClientBuilder installedAppWildCardDomainAndFragment = ClientBuilder.create().clientId("test-domain-wildcard-with-fragment").name("test-domain-wildcard-fragment")
-                .redirectUris("http://*.with-star.example.local/foo/*")
+                .redirectUris("http://*.with-star.example.local/foo/*","http://*.with-star-and-port.example.local:8080/foo/*")
                 .secret("password");
         realm.client(installedAppWildCardDomainAndFragment);
 
@@ -417,6 +417,10 @@ public class OAuthRedirectUriTest extends AbstractKeycloakTest {
 
         checkRedirectUri("http://wild.with-star.example.local/foo/no", true);
         checkRedirectUri("http://malicious.com/with-star.example.local/foo/no/", false);
+        checkRedirectUri("http://wild.with-star-and-port.example.local:8080/foo/no", true);
+        checkRedirectUri("http://wild.with-star-and-port.example.local.fail:8080/foo/no", false);
+        checkRedirectUri("http://wild.with-star-and-port.example.local:8081/foo/no", false);
+        checkRedirectUri("http://wild.with-star-and-port.example.local/foo/no", false);
     }
 
     @Test

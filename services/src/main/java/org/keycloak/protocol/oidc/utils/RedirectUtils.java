@@ -177,6 +177,11 @@ public class RedirectUtils {
             if(redirect.startsWith(protocol.concat("://")) && host.startsWith("*")){
                 URI redirectUri= URI.create(redirect);
                 String redirectHost = redirectUri.getHost();
+                //host with port configured
+                if(host.contains(":")) {
+                    redirectHost = redirectHost.concat(":").concat(Integer.toString(redirectUri.getPort()));
+                }
+
                 if(redirectHost.endsWith(StringUtils.substringAfter(host,"*")))
                 {
                     validRedirect = redirectUri.getScheme()+ "://" + redirectHost + path;
