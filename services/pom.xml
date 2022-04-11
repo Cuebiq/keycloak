@@ -28,7 +28,7 @@
 
     <artifactId>keycloak-services</artifactId>
     <name>Keycloak REST Services</name>
-    <version>11.0.3.cuebiq.2</version>
+    <version>11.0.3.cuebiq.3</version>
     <description />
 
     <properties>
