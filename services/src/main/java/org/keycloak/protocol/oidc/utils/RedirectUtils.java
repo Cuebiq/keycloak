@@ -257,6 +257,24 @@ public class RedirectUtils {
     private static String matchesRedirects(Set<String> validRedirects, String redirect, boolean allowWildcards) {
         logger.tracef("matchesRedirects: redirect URL to check: %s, allow wildcards: %b, Configured valid redirect URLs: %s", redirect, allowWildcards, validRedirects);
         for (String validRedirect : validRedirects) {
+            int protocolIndex = validRedirect.indexOf("://");
+
+            if ( protocolIndex >= 0 ) {
+                String protocol = validRedirect.substring(0, protocolIndex );
+                String hostAndPath = validRedirect.substring(protocolIndex+"://".length()) ;
+                int slashIndex = hostAndPath.indexOf("/");
+                if ( slashIndex >=0 ) {
+                    String path = "/" + hostAndPath.substring(slashIndex+1);
+                    String host = hostAndPath.substring(0, slashIndex);
+                    if(redirect.startsWith(protocol.concat("://")) && host.startsWith("*")){
+                        URI redirectUri= URI.create(redirect);
+                        String redirectHost = redirectUri.getHost();
+                        if(redirectHost.endsWith(host.substring(host.indexOf("*")+1))){
+                            validRedirect = redirectUri.getScheme()+ "://" + redirectHost + path;
+                        }
+                    }
+                }
+            }
             if (validRedirect.endsWith("*") && !validRedirect.contains("?") && allowWildcards) {
                 // strip off the query component - we don't check them when wildcards are effective
                 String r = redirect.contains("?") ? redirect.substring(0, redirect.indexOf("?")) : redirect;
