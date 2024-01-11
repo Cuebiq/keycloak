@@ -174,6 +174,29 @@ public class RedirectUtils {
     private static String matchesRedirects(Set<String> validRedirects, String redirect, boolean allowWildcards) {
         logger.tracef("matchesRedirects: redirect URL to check: %s, allow wildcards: %b, Configured valid redirect URLs: %s", redirect, allowWildcards, validRedirects);
         for (String validRedirect : validRedirects) {
+            // [Cuebiq patch] Rewrite subdomain-wildcard redirect URIs (e.g. "https://*.example.com/path")
+            // into a concrete URI matching the incoming redirect host before falling through to the
+            // standard upstream wildcard check below. Without this, valid redirect entries like
+            // "https://*.dev.spectus.ai/*" never match a runtime redirect "https://platform.dev.spectus.ai/cb"
+            // because upstream Keycloak only treats "*" as a trailing-path wildcard, not a host wildcard.
+            int protocolIndex = validRedirect.indexOf("://");
+            if (protocolIndex >= 0) {
+                String protocol = validRedirect.substring(0, protocolIndex);
+                String hostAndPath = validRedirect.substring(protocolIndex + "://".length());
+                int slashIndex = hostAndPath.indexOf("/");
+                if (slashIndex >= 0) {
+                    String path = "/" + hostAndPath.substring(slashIndex + 1);
+                    String host = hostAndPath.substring(0, slashIndex);
+                    if (redirect.startsWith(protocol.concat("://")) && host.startsWith("*")) {
+                        URI redirectUri = URI.create(redirect);
+                        String redirectHost = redirectUri.getHost();
+                        if (redirectHost != null && redirectHost.endsWith(host.substring(host.indexOf("*") + 1))) {
+                            validRedirect = redirectUri.getScheme() + "://" + redirectHost + path;
+                        }
+                    }
+                }
+            }
+
             if ("*".equals(validRedirect)) {
                 // the valid redirect * is a full wildcard for http(s) even if the redirect URI does not allow wildcards
                 return validRedirect;
