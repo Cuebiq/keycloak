@@ -38,6 +38,8 @@ import org.keycloak.truststore.TruststoreProvider;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.KeyStore;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -75,6 +77,29 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
     private final InputStreamResponseHandler inputStreamResponseHandler = new InputStreamResponseHandler();
     private long maxConsumedResponseSize;
 
+    // Define an allowlist of permitted hostnames for outbound HTTP requests.
+    private static final String[] ALLOWED_HOSTS = {
+        // TODO: Change these to fit your deployment environment.
+        "example.com",
+        "api.example.com"
+    };
+
+    private static boolean isAllowedUri(String uriString) {
+        try {
+            URI uri = new URI(uriString);
+            String host = uri.getHost();
+            if (host == null) return false;
+            for (String allowed : ALLOWED_HOSTS) {
+                if (host.equalsIgnoreCase(allowed)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
     private static class InputStreamResponseHandler extends AbstractResponseHandler<InputStream> {
 
         public InputStream handleEntity(HttpEntity entity) throws IOException {
@@ -103,6 +128,9 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
             @Override
             public int postText(String uri, String text) throws IOException {
+                if (!isAllowedUri(uri)) {
+                    throw new IOException("Target host is not allowed: " + uri);
+                }
                 HttpPost request = new HttpPost(uri);
                 request.setEntity(EntityBuilder.create().setText(text).setContentType(ContentType.TEXT_PLAIN).build());
                 try (CloseableHttpResponse response = httpClient.execute(request)) {
@@ -119,6 +147,9 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
             @Override
             public String getString(String uri) throws IOException {
+                if (!isAllowedUri(uri)) {
+                    throw new IOException("Target host is not allowed: " + uri);
+                }
                 HttpGet request = new HttpGet(uri);
                 HttpResponse response = httpClient.execute(request);
                 String body = stringResponseHandler.handleResponse(response);
@@ -130,6 +161,9 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
             @Override
             public InputStream getInputStream(String uri) throws IOException {
+                if (!isAllowedUri(uri)) {
+                    throw new IOException("Target host is not allowed: " + uri);
+                }
                 HttpGet request = new HttpGet(uri);
                 HttpResponse response = httpClient.execute(request);
                 InputStream body = inputStreamResponseHandler.handleResponse(response);
