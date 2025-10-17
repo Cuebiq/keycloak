@@ -257,6 +257,7 @@ public class SimpleHttp {
     }
 
     private HttpRequestBase createHttpRequest() {
+        validateUrl(url); // SSRF mitigation: validate/whitelist URL before request
         switch(method) {
             case "GET":
                 return new HttpGet(appendParameterToUrl(url));
@@ -270,8 +271,25 @@ public class SimpleHttp {
                 return new HttpPatch(appendParameterToUrl(url));
             case "POST":
                 // explicit fall through as we want POST to be the default HTTP method
-            default:
                 return new HttpPost(url);
+        }
+    }
+
+    /**
+     * Validate the URL to avoid SSRF. Allow only URLs matching a whitelist or with a specific host/prefix.
+     * Throws IllegalArgumentException if invalid.
+     */
+    private void validateUrl(String url) {
+        try {
+            URI uri = new URI(url);
+            // Example: Allow only https URLs to 'api.my-domain.com'
+            String allowedHost = "api.my-domain.com";
+            String allowedScheme = "https";
+            if (!allowedHost.equalsIgnoreCase(uri.getHost()) || !allowedScheme.equalsIgnoreCase(uri.getScheme())) {
+                throw new IllegalArgumentException("SSRF protection: only URLs to '" + allowedScheme + "://" + allowedHost + "' allowed. Got: " + url);
+            }
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid URL syntax: " + url, e);
         }
     }
 
