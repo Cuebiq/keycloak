@@ -318,4 +318,18 @@ public class RedirectUtilsTest {
         Assert.assertEquals("custom3://custom", RedirectUtils.verifyRedirectUri(session, null, "custom3://custom", set, false));
         Assert.assertEquals("https://test.com/lala", RedirectUtils.verifyRedirectUri(session, null, "https://test.com/lala", set, false));
     }
+
+    @Test
+    public void testverifyDomainWildcardRedirectUri() {
+        Set<String> set = Stream.of(
+                "https://*.keycloak.org/*"
+        ).collect(Collectors.toSet());
+
+        Assert.assertNull(RedirectUtils.verifyRedirectUri(session, null, "https://keycloak.org/path space/", set, false));
+        Assert.assertNull(RedirectUtils.verifyRedirectUri(session, null, "https://test.nonkeycloak.org/path space/", set, false));
+
+        Assert.assertEquals("https://dev.keycloak.org/test", RedirectUtils.verifyRedirectUri(session, null, "https://dev.keycloak.org/test", set, false));
+        Assert.assertEquals("https://inte.keycloak.org/", RedirectUtils.verifyRedirectUri(session, null, "https://inte.keycloak.org/", set, false));
+        Assert.assertEquals("https://prod.keycloak.org/test", RedirectUtils.verifyRedirectUri(session, null, "https://prod.keycloak.org/test", set, false));
+    }
 }
